@@ -1,5 +1,5 @@
 import streamlit as st
-from backend import extract_source_concepts
+from backend import extract_source_concepts, evaluate_user_explanations
 
 # 1. Workflow Initialization: Set up the memory bank
 if "workflow_stage" not in st.session_state:
@@ -8,7 +8,7 @@ if "cached_concepts" not in st.session_state:
     st.session_state["cached_concepts"] = None
 
 # --- Topographical Layout ---
-st.title("CogniStruct: Active Recall Engine")
+st.title("SimplifAI: Active Recall Engine")
 st.markdown("Master complex subjects through the Feynman Technique.")
 st.divider()
 
@@ -60,8 +60,39 @@ elif st.session_state["workflow_stage"] == "active_recall":
         submitted = st.form_submit_button("Submit Explanations for Evaluation")
         
         if submitted:
-            # Here is where the final evaluation logic will go!
-            st.success("Explanations submitted! (Evaluation backend coming next)")
+            # Here is where the final evaluation logic will go
+            with st.spinner("Analyzing your explanations and generating your Feynman report..."):
+                # 1. Execute the semantic evaluation backend
+                evaluation_report = evaluate_user_explanations(
+                    st.session_state["cached_concepts"], 
+                    user_explanations
+                )
+                
+                st.divider()
+                st.subheader("Your Feynman Evaluation Report")
+                
+                # 2. Display the overall score using a metric element
+                st.metric(label="Overall Conceptual Mastery", value=f"{evaluation_report.overall_score}/100")
+                
+                # 3. Render identified gaps
+                st.markdown("### 🔍 Missing Knowledge Gaps")
+                if evaluation_report.identified_gaps:
+                    for gap in evaluation_report.identified_gaps:
+                        st.warning(gap)
+                else:
+                    st.success("Perfect! You didn't leave out any key details.")
+                    
+                # 4. Render misconceptions/hallucinations
+                st.markdown("### ⚠️ Misconceptions / Incorrect Information")
+                if evaluation_report.hallucinations:
+                    for hallucination in evaluation_report.hallucinations:
+                        st.error(hallucination)
+                else:
+                    st.success("No misconceptions or incorrect facts detected!")
+                    
+                # 5. Render mentor prose feedback
+                st.markdown("### 🧑‍🏫 Mentor Insights (Simplified)")
+                st.info(evaluation_report.feynman_feedback)   
             
     # Allow the user to reset the app
     if st.button("Start Over"):
